@@ -70,6 +70,20 @@ class PhotocopierViewController: UIViewController {
             make.height.equalTo(0.5)
         }
         
+        accountLabel = UILabel()
+        accountLabel.font = UIFont.systemFont(ofSize: 100, weight: .thin)
+        accountLabel.textColor = .white
+        accountLabel.text = accountCode
+        accountLabel.addCharacterSpacing()
+        accountLabel.sizeToFit()
+        accountLabel.alpha = 1
+        
+        view.addSubview(accountLabel)
+        accountLabel.snp.makeConstraints { (make) in
+            make.centerY.equalTo(self.view.snp.centerY)
+            make.left.equalTo(titleLabel.snp.left).offset(100)
+        }
+        
         let twoLabel = UILabel()
         twoLabel.font = UIFont.systemFont(ofSize: 48, weight: .regular)
         twoLabel.textColor = .white
@@ -190,6 +204,19 @@ class PhotocopierViewController: UIViewController {
             make.top.equalTo(eightLabel.snp.bottom).offset(75)
         }
         
+        let backspaceLabel = UILabel()
+
+        backspaceLabel.font = UIFont.systemFont(ofSize: 48, weight: .regular)
+        backspaceLabel.textColor = .red
+        backspaceLabel.text = "<"
+        backspaceLabel.sizeToFit()
+
+        view.addSubview(backspaceLabel)
+        backspaceLabel.snp.makeConstraints { (make) in
+            make.centerY.equalTo(zeroLabel.snp.centerY)
+            make.right.equalTo(zeroLabel.snp.left).offset(-100)
+        }
+        
         numberPad.append(oneLabel)
         numberPad.append(twoLabel)
         numberPad.append(threeLabel)
@@ -200,6 +227,7 @@ class PhotocopierViewController: UIViewController {
         numberPad.append(eightLabel)
         numberPad.append(nineLabel)
         numberPad.append(zeroLabel)
+        numberPad.append(backspaceLabel)
         
         for number in numberPad {
             let button = UIView()
@@ -220,7 +248,11 @@ class PhotocopierViewController: UIViewController {
                 .subscribe(onNext: { [weak self] _ in
                     if (self?.accountCode.count)! < 4 {
                         self?.generator.impactOccurred()
-                        self?.accountCode.append(contentsOf: number.text!)
+                        if number.text == "<" {
+                            self?.accountCode.remove(at: self!.accountCode.index(before: self!.accountCode.endIndex))
+                        } else {
+                            self?.accountCode.append(contentsOf: number.text!)
+                        }
                         self?.animateNumberPad(label: number)
                         self?.updateAccountDisplay()
                         if self?.accountCode.count == 4 {
@@ -235,17 +267,9 @@ class PhotocopierViewController: UIViewController {
     }
     
     private func updateAccountDisplay() {
-        if accountLabel != nil {
-            accountLabel.removeFromSuperview()
-        }
-        
-        accountLabel = UILabel()
-        accountLabel.font = UIFont.systemFont(ofSize: 100, weight: .thin)
-        accountLabel.textColor = .white
         accountLabel.text = accountCode
         accountLabel.addCharacterSpacing()
         accountLabel.sizeToFit()
-        accountLabel.alpha = 1
         
         view.addSubview(accountLabel)
         accountLabel.snp.makeConstraints { (make) in
@@ -287,7 +311,8 @@ class PhotocopierViewController: UIViewController {
             .tapGesture()
             .when(.recognized)
             .subscribe(onNext: { [weak self] _ in
-                
+                self?.accountCode = ""
+                self?.transitionToLoggedOut()
             })
         .disposed(by: disposeBag)
     }
@@ -322,7 +347,7 @@ class PhotocopierViewController: UIViewController {
         numCopiesSlider = UISlider()
         numCopiesSlider.minimumValue = 1
         numCopiesSlider.maximumValue = 200
-        numCopiesSlider.alpha = 1
+        numCopiesSlider.alpha = 0
         
         view.addSubview(numCopiesSlider)
         numCopiesSlider.snp.makeConstraints { (make) in
@@ -411,21 +436,52 @@ class PhotocopierViewController: UIViewController {
     
     private func displayStartButton() {
         startBackgroundView = RoundShadowView(frame: CGRect(x: self.view.frame.width/2 - 100, y: self.view.frame.height - 50 - 75, width: 200, height: 75), cornerRadius: 75/2, shadowRadius: 4, shadowOffset: CGSize(width: 0, height: 1), shadowOpacity: 0.85, shadowColor: UIColor.clear.cgColor)
-        startBackgroundView.backgroundColor = .darkGray
+        startBackgroundView.backgroundColor = UIColor(red: 39/255, green: 41/255, blue: 45/255, alpha: 1.0)
         startBackgroundView.layer.cornerRadius = 75/2
         startBackgroundView.alpha = 0
         
         view.addSubview(startBackgroundView)
         
         startLabel = UILabel()
+        startLabel.font = UIFont.systemFont(ofSize: 36, weight: .regular)
+        startLabel.textColor = .green
+        startLabel.text = "Start"
+        startLabel.sizeToFit()
+        startLabel.alpha = 0
         
+        view.addSubview(startLabel)
+        startLabel.snp.makeConstraints { (make) in
+            make.centerX.equalTo(startBackgroundView.snp.centerX)
+            make.centerY.equalTo(startBackgroundView.snp.centerY)
+        }
+    }
+    
+    private func displayPageSource() {
+        pageSourceLabel = UILabel()
+        pageSourceLabel.font = UIFont.systemFont(ofSize: 36, weight: .regular)
+        pageSourceLabel.textColor = .white
+        pageSourceLabel.text = "Page Source"
+        pageSourceLabel.sizeToFit()
+        pageSourceLabel.alpha = 0
+        
+        view.addSubview(pageSourceLabel)
+        pageSourceLabel.snp.makeConstraints { (make) in
+            make.top.equalTo(brightnessSlider.snp.bottom).offset(25)
+            make.left.equalTo(titleLabel.snp.left)
+        }
+        
+        pageSrcABackgroundView = RoundShadowView(frame: CGRect(x: 50, y: self.view.frame.height - 50 - 235, width: 150, height: 75), cornerRadius: 75/2, shadowRadius: 4, shadowOffset: CGSize(width: 0, height: 1), shadowOpacity: 0.85, shadowColor: UIColor.green.cgColor)
+        pageSrcABackgroundView.backgroundColor = UIColor(red: 39/255, green: 41/255, blue: 45/255, alpha: 1.0)
+        pageSrcABackgroundView.layer.cornerRadius = 75/2
+        pageSrcABackgroundView.alpha = 0
+        
+        view.addSubview(pageSrcABackgroundView)
     }
     
     // MARK: - Transition
     
     private func transitionToLoggedOut() {
-        displayEnter()
-        displayNumberPad()
+        animateLoggedOutEntrance()
     }
     
     private func transitionToLoggedIn() {
@@ -436,6 +492,7 @@ class PhotocopierViewController: UIViewController {
         displayNumberOfCopies()
         displayBrightness()
         displayStartButton()
+        displayPageSource()
         animateMenuEntrance()
     }
     
@@ -478,6 +535,7 @@ class PhotocopierViewController: UIViewController {
             for label in self.numberPad {
                 label.removeFromSuperview()
             }
+            self.numberPad = []
         }
         
         animator.startAnimation()
@@ -494,7 +552,32 @@ class PhotocopierViewController: UIViewController {
             self.brightnessLabel.alpha = 1
             self.brightnessSlider.alpha = 1
             self.startBackgroundView.alpha = 1
+            self.startLabel.alpha = 1
+            self.pageSourceLabel.alpha = 1
+            self.pageSrcABackgroundView.alpha = 1
         })
+        
+        animator.startAnimation()
+    }
+    
+    private func animateLoggedOutEntrance() {
+        let animator = UIViewPropertyAnimator(duration: 0.5, curve: .easeOut, animations: {
+            for view in self.view.subviews {
+                if view != self.titleLabel {
+                    view.alpha = 0
+                }
+            }
+        })
+        
+        animator.addCompletion { _ in
+            for view in self.view.subviews {
+                if view != self.titleLabel {
+                    view.removeFromSuperview()
+                }
+            }
+            self.displayEnter()
+            self.displayNumberPad()
+        }
         
         animator.startAnimation()
     }
@@ -535,6 +618,15 @@ class PhotocopierViewController: UIViewController {
     // Start Button
     private var startBackgroundView: RoundShadowView!
     private var startLabel: UILabel!
+    
+    // Page Source
+    private var pageSourceLabel: UILabel!
+    private var pageSrcALabel: UILabel!
+    private var pageSrcABackgroundView: RoundShadowView!
+    private var pageSrcBLabel: UILabel!
+    private var pageSrcBBackgroundView: RoundShadowView!
+    private var pageSrcCLabel: UILabel!
+    private var pageSrcCBackgroundView: RoundShadowView!
     
     // Animation + Interaction
     private var generator = UIImpactFeedbackGenerator(style: .heavy)
