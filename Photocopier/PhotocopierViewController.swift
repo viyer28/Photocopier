@@ -256,6 +256,7 @@ class PhotocopierViewController: UIViewController {
                         self?.animateNumberPad(label: number)
                         self?.updateAccountDisplay()
                         if self?.accountCode.count == 4 {
+                            self?.animateNumberPadExit()
                             self?.transitionToLoggedIn()
                         }
                     }
@@ -454,13 +455,21 @@ class PhotocopierViewController: UIViewController {
             make.centerX.equalTo(startBackgroundView.snp.centerX)
             make.centerY.equalTo(startBackgroundView.snp.centerY)
         }
+        
+        startLabel.rx
+            .tapGesture()
+            .when(.recognized)
+            .subscribe(onNext: { [weak self] _ in
+                self?.transitionToPrinting()
+            })
+        .disposed(by: disposeBag)
     }
     
     private func displayPageSource() {
         pageSourceLabel = UILabel()
         pageSourceLabel.font = UIFont.systemFont(ofSize: 36, weight: .regular)
         pageSourceLabel.textColor = .white
-        pageSourceLabel.text = "Page Source"
+        pageSourceLabel.text = "Paper Source"
         pageSourceLabel.sizeToFit()
         pageSourceLabel.alpha = 0
         
@@ -470,12 +479,474 @@ class PhotocopierViewController: UIViewController {
             make.left.equalTo(titleLabel.snp.left)
         }
         
-        pageSrcABackgroundView = RoundShadowView(frame: CGRect(x: 50, y: self.view.frame.height - 50 - 235, width: 150, height: 75), cornerRadius: 75/2, shadowRadius: 4, shadowOffset: CGSize(width: 0, height: 1), shadowOpacity: 0.85, shadowColor: UIColor.green.cgColor)
+        pageSrcABackgroundView = RoundShadowView(frame: CGRect(x: 50, y: self.view.frame.height - 50 - 235, width: 150, height: 75), cornerRadius: 75/2, shadowRadius: 4, shadowOffset: CGSize(width: 0, height: 1), shadowOpacity: 0.85, shadowColor: UIColor.clear.cgColor)
         pageSrcABackgroundView.backgroundColor = UIColor(red: 39/255, green: 41/255, blue: 45/255, alpha: 1.0)
         pageSrcABackgroundView.layer.cornerRadius = 75/2
         pageSrcABackgroundView.alpha = 0
         
         view.addSubview(pageSrcABackgroundView)
+        
+        pageSrcALabel = UILabel()
+        pageSrcALabel.font = UIFont.systemFont(ofSize: 28, weight: .bold)
+        pageSrcALabel.textColor = .white
+        pageSrcALabel.text = "Tray A"
+        pageSrcALabel.sizeToFit()
+        pageSrcALabel.alpha = 0
+        
+        view.addSubview(pageSrcALabel)
+        pageSrcALabel.snp.makeConstraints { (make) in
+            make.centerX.equalTo(pageSrcABackgroundView.snp.centerX)
+            make.centerY.equalTo(pageSrcABackgroundView.snp.centerY)
+        }
+        
+        pageSrcABackgroundView.rx
+            .tapGesture()
+            .when(.recognized)
+            .subscribe(onNext: { [weak self] _ in
+                if self?.paperSource != "A" {
+                    self?.paperSource = "A"
+                    self?.pageSrcALabel.font = UIFont.systemFont(ofSize: 28, weight: .bold)
+                    self?.pageSrcALabel.textColor = .white
+                    self?.pageSrcALabel.sizeToFit()
+                    self?.view.addSubview(self!.pageSrcALabel)
+                    self?.pageSrcBLabel.font = UIFont.systemFont(ofSize: 28, weight: .regular)
+                    self?.pageSrcBLabel.textColor = .lightGray
+                    self?.pageSrcBLabel.sizeToFit()
+                    self?.view.addSubview(self!.pageSrcBLabel)
+                    self?.pageSrcCLabel.font = UIFont.systemFont(ofSize: 28, weight: .regular)
+                    self?.pageSrcCLabel.textColor = .lightGray
+                    self?.pageSrcCLabel.sizeToFit()
+                    self?.view.addSubview(self!.pageSrcCLabel)
+                }
+            })
+            .disposed(by: disposeBag)
+        
+        pageSrcBBackgroundView = RoundShadowView(frame: CGRect(x: 50 + 150 + 40, y: self.view.frame.height - 50 - 235, width: 150, height: 75), cornerRadius: 75/2, shadowRadius: 4, shadowOffset: CGSize(width: 0, height: 1), shadowOpacity: 0.85, shadowColor: UIColor.clear.cgColor)
+        pageSrcBBackgroundView.backgroundColor = UIColor(red: 39/255, green: 41/255, blue: 45/255, alpha: 1.0)
+        pageSrcBBackgroundView.layer.cornerRadius = 75/2
+        pageSrcBBackgroundView.alpha = 0
+        
+        view.addSubview(pageSrcBBackgroundView)
+        
+        pageSrcBLabel = UILabel()
+        pageSrcBLabel.font = UIFont.systemFont(ofSize: 28, weight: .regular)
+        pageSrcBLabel.textColor = .lightGray
+        pageSrcBLabel.text = "Tray B"
+        pageSrcBLabel.sizeToFit()
+        pageSrcBLabel.alpha = 0
+        
+        view.addSubview(pageSrcBLabel)
+        pageSrcBLabel.snp.makeConstraints { (make) in
+            make.centerX.equalTo(pageSrcBBackgroundView.snp.centerX)
+            make.centerY.equalTo(pageSrcBBackgroundView.snp.centerY)
+        }
+        
+        pageSrcBBackgroundView.rx
+            .tapGesture()
+            .when(.recognized)
+            .subscribe(onNext: { [weak self] _ in
+                if self?.paperSource != "B" {
+                    self?.paperSource = "B"
+                    self?.pageSrcBLabel.font = UIFont.systemFont(ofSize: 28, weight: .bold)
+                    self?.pageSrcBLabel.textColor = .white
+                    self?.pageSrcBLabel.sizeToFit()
+                    self?.view.addSubview(self!.pageSrcBLabel)
+                    self?.pageSrcALabel.font = UIFont.systemFont(ofSize: 28, weight: .regular)
+                    self?.pageSrcALabel.textColor = .lightGray
+                    self?.pageSrcALabel.sizeToFit()
+                    self?.view.addSubview(self!.pageSrcALabel)
+                    self?.pageSrcCLabel.font = UIFont.systemFont(ofSize: 28, weight: .regular)
+                    self?.pageSrcCLabel.textColor = .lightGray
+                    self?.pageSrcCLabel.sizeToFit()
+                    self?.view.addSubview(self!.pageSrcCLabel)
+                }
+            })
+        .disposed(by: disposeBag)
+        
+        pageSrcCBackgroundView = RoundShadowView(frame: CGRect(x: 50 + 300 + 80, y: self.view.frame.height - 50 - 235, width: 150, height: 75), cornerRadius: 75/2, shadowRadius: 4, shadowOffset: CGSize(width: 0, height: 1), shadowOpacity: 0.85, shadowColor: UIColor.clear.cgColor)
+        pageSrcCBackgroundView.backgroundColor = UIColor(red: 39/255, green: 41/255, blue: 45/255, alpha: 1.0)
+        pageSrcCBackgroundView.layer.cornerRadius = 75/2
+        pageSrcCBackgroundView.alpha = 0
+        
+        view.addSubview(pageSrcCBackgroundView)
+        
+        pageSrcCLabel = UILabel()
+        pageSrcCLabel.font = UIFont.systemFont(ofSize: 28, weight: .regular)
+        pageSrcCLabel.textColor = .lightGray
+        pageSrcCLabel.text = "Tray C"
+        pageSrcCLabel.sizeToFit()
+        pageSrcCLabel.alpha = 0
+        
+        view.addSubview(pageSrcCLabel)
+        pageSrcCLabel.snp.makeConstraints { (make) in
+            make.centerX.equalTo(pageSrcCBackgroundView.snp.centerX)
+            make.centerY.equalTo(pageSrcCBackgroundView.snp.centerY)
+        }
+        
+        pageSrcCBackgroundView.rx
+            .tapGesture()
+            .when(.recognized)
+            .subscribe(onNext: { [weak self] _ in
+                if self?.paperSource != "C" {
+                    self?.paperSource = "C"
+                    self?.pageSrcCLabel.font = UIFont.systemFont(ofSize: 28, weight: .bold)
+                    self?.pageSrcCLabel.textColor = .white
+                    self?.pageSrcCLabel.sizeToFit()
+                    self?.view.addSubview(self!.pageSrcCLabel)
+                    self?.pageSrcALabel.font = UIFont.systemFont(ofSize: 28, weight: .regular)
+                    self?.pageSrcALabel.textColor = .lightGray
+                    self?.pageSrcALabel.sizeToFit()
+                    self?.view.addSubview(self!.pageSrcALabel)
+                    self?.pageSrcBLabel.font = UIFont.systemFont(ofSize: 28, weight: .regular)
+                    self?.pageSrcBLabel.textColor = .lightGray
+                    self?.pageSrcBLabel.sizeToFit()
+                    self?.view.addSubview(self!.pageSrcBLabel)
+                }
+            })
+        .disposed(by: disposeBag)
+    }
+    
+    private func displaySides() {
+        sidesLabel = UILabel()
+        sidesLabel.font = UIFont.systemFont(ofSize: 36, weight: .regular)
+        sidesLabel.textColor = .white
+        sidesLabel.text = "Sides"
+        sidesLabel.sizeToFit()
+        sidesLabel.alpha = 0
+        
+        view.addSubview(sidesLabel)
+        sidesLabel.snp.makeConstraints { (make) in
+            make.left.equalTo(self.view.snp.centerX).offset(50)
+            make.centerY.equalTo(numCopiesLabel.snp.centerY)
+        }
+        
+        oneToOneBackgroundView = RoundShadowView(frame: CGRect(x: self.view.frame.width/2 + 50, y: 250, width: 225, height: 100), cornerRadius: 75/2, shadowRadius: 4, shadowOffset: CGSize(width: 0, height: 1), shadowOpacity: 0.85, shadowColor: UIColor.clear.cgColor)
+
+        oneToOneBackgroundView.backgroundColor = UIColor(red: 39/255, green: 41/255, blue: 45/255, alpha: 1.0)
+        oneToOneBackgroundView.layer.cornerRadius = 75/2
+        oneToOneBackgroundView.alpha = 0
+        
+        view.addSubview(oneToOneBackgroundView)
+        
+        oneToOneBackgroundView.rx
+            .tapGesture()
+            .when(.recognized)
+            .subscribe(onNext: { [weak self] _ in
+                if self?.sides != "1-1" {
+                    self?.sides = "1-1"
+                    self?.oneToOneImageView.alpha = 1
+                    self?.oneToTwoImageView.alpha = 0.5
+                    self?.twoToOneImageView.alpha = 0.5
+                    self?.twoToTwoImageView.alpha = 0.5
+                }
+            })
+            .disposed(by: disposeBag)
+        
+        twoToTwoBackgroundView = RoundShadowView(frame: CGRect(x: self.view.frame.width - 50 - 225, y: 250, width: 225, height: 100), cornerRadius: 75/2, shadowRadius: 4, shadowOffset: CGSize(width: 0, height: 1), shadowOpacity: 0.85, shadowColor: UIColor.clear.cgColor)
+
+        twoToTwoBackgroundView.backgroundColor = UIColor(red: 39/255, green: 41/255, blue: 45/255, alpha: 1.0)
+        twoToTwoBackgroundView.layer.cornerRadius = 75/2
+        twoToTwoBackgroundView.alpha = 0
+        
+        view.addSubview(twoToTwoBackgroundView)
+        
+        twoToTwoBackgroundView.rx
+            .tapGesture()
+            .when(.recognized)
+            .subscribe(onNext: { [weak self] _ in
+                if self?.sides != "2-2" {
+                    self?.sides = "2-2"
+                    self?.oneToOneImageView.alpha = 0.5
+                    self?.oneToTwoImageView.alpha = 0.5
+                    self?.twoToOneImageView.alpha = 0.5
+                    self?.twoToTwoImageView.alpha = 1
+                }
+            })
+            .disposed(by: disposeBag)
+        
+        oneToTwoBackgroundView = RoundShadowView(frame: CGRect(x: self.view.frame.width/2 + 50, y: 375, width: 225, height: 100), cornerRadius: 75/2, shadowRadius: 4, shadowOffset: CGSize(width: 0, height: 1), shadowOpacity: 0.85, shadowColor: UIColor.clear.cgColor)
+
+        oneToTwoBackgroundView.backgroundColor = UIColor(red: 39/255, green: 41/255, blue: 45/255, alpha: 1.0)
+        oneToTwoBackgroundView.layer.cornerRadius = 75/2
+        oneToTwoBackgroundView.alpha = 0
+        
+        view.addSubview(oneToTwoBackgroundView)
+        
+        oneToTwoBackgroundView.rx
+            .tapGesture()
+            .when(.recognized)
+            .subscribe(onNext: { [weak self] _ in
+                if self?.sides != "1-2" {
+                    self?.sides = "1-2"
+                    self?.oneToOneImageView.alpha = 0.5
+                    self?.oneToTwoImageView.alpha = 1
+                    self?.twoToOneImageView.alpha = 0.5
+                    self?.twoToTwoImageView.alpha = 0.5
+                }
+            })
+            .disposed(by: disposeBag)
+        
+        twoToOneBackgroundView = RoundShadowView(frame: CGRect(x: self.view.frame.width - 50 - 225, y: 375, width: 225, height: 100), cornerRadius: 75/2, shadowRadius: 4, shadowOffset: CGSize(width: 0, height: 1), shadowOpacity: 0.85, shadowColor: UIColor.clear.cgColor)
+
+        twoToOneBackgroundView.backgroundColor = UIColor(red: 39/255, green: 41/255, blue: 45/255, alpha: 1.0)
+        twoToOneBackgroundView.layer.cornerRadius = 75/2
+        twoToOneBackgroundView.alpha = 0
+        
+        view.addSubview(twoToOneBackgroundView)
+        
+        twoToOneBackgroundView.rx
+            .tapGesture()
+            .when(.recognized)
+            .subscribe(onNext: { [weak self] _ in
+                if self?.sides != "2-1" {
+                    self?.sides = "2-1"
+                    self?.oneToOneImageView.alpha = 0.5
+                    self?.oneToTwoImageView.alpha = 0.5
+                    self?.twoToOneImageView.alpha = 1
+                    self?.twoToTwoImageView.alpha = 0.5
+                }
+            })
+            .disposed(by: disposeBag)
+        
+        oneToOneImageView = UIImageView(image: UIImage(named: "oneToOne"))
+        oneToOneImageView.contentMode = .scaleAspectFit
+        oneToOneImageView.alpha = 0
+        
+        view.addSubview(oneToOneImageView)
+        oneToOneImageView.snp.makeConstraints { (make) in
+            make.centerX.equalTo(self.oneToOneBackgroundView.snp.centerX)
+            make.centerY.equalTo(self.oneToOneBackgroundView.snp.centerY)
+            make.width.equalTo(175)
+        }
+        
+        twoToTwoImageView = UIImageView(image: UIImage(named: "twoToTwo"))
+        twoToTwoImageView.contentMode = .scaleAspectFit
+        twoToTwoImageView.alpha = 0
+        
+        view.addSubview(twoToTwoImageView)
+        twoToTwoImageView.snp.makeConstraints { (make) in
+            make.centerX.equalTo(self.twoToTwoBackgroundView.snp.centerX)
+            make.centerY.equalTo(self.twoToTwoBackgroundView.snp.centerY)
+            make.width.equalTo(175)
+        }
+        
+        oneToTwoImageView = UIImageView(image: UIImage(named: "oneToTwo"))
+        oneToTwoImageView.contentMode = .scaleAspectFit
+        oneToTwoImageView.alpha = 0
+        
+        view.addSubview(oneToTwoImageView)
+        oneToTwoImageView.snp.makeConstraints { (make) in
+            make.centerX.equalTo(self.oneToTwoBackgroundView.snp.centerX)
+            make.centerY.equalTo(self.oneToTwoBackgroundView.snp.centerY)
+            make.width.equalTo(175)
+        }
+        
+        twoToOneImageView = UIImageView(image: UIImage(named: "twoToOne"))
+        twoToOneImageView.contentMode = .scaleAspectFit
+        twoToOneImageView.alpha = 0
+        
+        view.addSubview(twoToOneImageView)
+        twoToOneImageView.snp.makeConstraints { (make) in
+            make.centerX.equalTo(self.twoToOneBackgroundView.snp.centerX)
+            make.centerY.equalTo(self.twoToOneBackgroundView.snp.centerY)
+            make.width.equalTo(175)
+        }
+    }
+    
+    private func displaySeparatorPage() {
+//        private var seperatorLabel: UILabel!
+//        private var sepSrcALabel: UILabel!
+//        private var sepSrcABackgroundView: RoundShadowView!
+//        private var sepSrcBLabel: UILabel!
+//        private var sepSrcBBackgroundView: RoundShadowView!
+//        private var sepSrcCLabel: UILabel!
+//        private var sepSrcCBackgroundView: RoundShadowView!
+//        private var noSrcLabel: UILabel!
+//        private var noSrcBackgroundView: RoundShadowView!
+        
+        seperatorLabel = UILabel()
+        seperatorLabel.font = UIFont.systemFont(ofSize: 36, weight: .regular)
+        seperatorLabel.textColor = .white
+        seperatorLabel.text = "Seperator Page"
+        seperatorLabel.sizeToFit()
+        seperatorLabel.alpha = 0
+        
+        view.addSubview(seperatorLabel)
+        seperatorLabel.snp.makeConstraints { (make) in
+            make.top.equalTo(twoToTwoBackgroundView.snp.bottom).offset(25)
+            make.left.equalTo(sidesLabel.snp.left)
+        }
+        
+        sepSrcABackgroundView = RoundShadowView(frame: CGRect(x: self.view.frame.width/2 + 50, y: self.view.frame.height - 50 - 235, width: 150, height: 75), cornerRadius: 75/2, shadowRadius: 4, shadowOffset: CGSize(width: 0, height: 1), shadowOpacity: 0.85, shadowColor: UIColor.clear.cgColor)
+        pageSrcABackgroundView.backgroundColor = UIColor(red: 39/255, green: 41/255, blue: 45/255, alpha: 1.0)
+        pageSrcABackgroundView.layer.cornerRadius = 75/2
+        pageSrcABackgroundView.alpha = 0
+        
+        view.addSubview(pageSrcABackgroundView)
+        
+        pageSrcALabel = UILabel()
+        pageSrcALabel.font = UIFont.systemFont(ofSize: 28, weight: .bold)
+        pageSrcALabel.textColor = .white
+        pageSrcALabel.text = "Tray A"
+        pageSrcALabel.sizeToFit()
+        pageSrcALabel.alpha = 0
+        
+        view.addSubview(pageSrcALabel)
+        pageSrcALabel.snp.makeConstraints { (make) in
+            make.centerX.equalTo(pageSrcABackgroundView.snp.centerX)
+            make.centerY.equalTo(pageSrcABackgroundView.snp.centerY)
+        }
+        
+        pageSrcABackgroundView.rx
+            .tapGesture()
+            .when(.recognized)
+            .subscribe(onNext: { [weak self] _ in
+                if self?.paperSource != "A" {
+                    self?.paperSource = "A"
+                    self?.pageSrcALabel.font = UIFont.systemFont(ofSize: 28, weight: .bold)
+                    self?.pageSrcALabel.textColor = .white
+                    self?.pageSrcALabel.sizeToFit()
+                    self?.view.addSubview(self!.pageSrcALabel)
+                    self?.pageSrcBLabel.font = UIFont.systemFont(ofSize: 28, weight: .regular)
+                    self?.pageSrcBLabel.textColor = .lightGray
+                    self?.pageSrcBLabel.sizeToFit()
+                    self?.view.addSubview(self!.pageSrcBLabel)
+                    self?.pageSrcCLabel.font = UIFont.systemFont(ofSize: 28, weight: .regular)
+                    self?.pageSrcCLabel.textColor = .lightGray
+                    self?.pageSrcCLabel.sizeToFit()
+                    self?.view.addSubview(self!.pageSrcCLabel)
+                }
+            })
+            .disposed(by: disposeBag)
+        
+        pageSrcBBackgroundView = RoundShadowView(frame: CGRect(x: 50 + 150 + 40, y: self.view.frame.height - 50 - 235, width: 150, height: 75), cornerRadius: 75/2, shadowRadius: 4, shadowOffset: CGSize(width: 0, height: 1), shadowOpacity: 0.85, shadowColor: UIColor.clear.cgColor)
+        pageSrcBBackgroundView.backgroundColor = UIColor(red: 39/255, green: 41/255, blue: 45/255, alpha: 1.0)
+        pageSrcBBackgroundView.layer.cornerRadius = 75/2
+        pageSrcBBackgroundView.alpha = 0
+        
+        view.addSubview(pageSrcBBackgroundView)
+        
+        pageSrcBLabel = UILabel()
+        pageSrcBLabel.font = UIFont.systemFont(ofSize: 28, weight: .regular)
+        pageSrcBLabel.textColor = .lightGray
+        pageSrcBLabel.text = "Tray B"
+        pageSrcBLabel.sizeToFit()
+        pageSrcBLabel.alpha = 0
+        
+        view.addSubview(pageSrcBLabel)
+        pageSrcBLabel.snp.makeConstraints { (make) in
+            make.centerX.equalTo(pageSrcBBackgroundView.snp.centerX)
+            make.centerY.equalTo(pageSrcBBackgroundView.snp.centerY)
+        }
+        
+        pageSrcBBackgroundView.rx
+            .tapGesture()
+            .when(.recognized)
+            .subscribe(onNext: { [weak self] _ in
+                if self?.paperSource != "B" {
+                    self?.paperSource = "B"
+                    self?.pageSrcBLabel.font = UIFont.systemFont(ofSize: 28, weight: .bold)
+                    self?.pageSrcBLabel.textColor = .white
+                    self?.pageSrcBLabel.sizeToFit()
+                    self?.view.addSubview(self!.pageSrcBLabel)
+                    self?.pageSrcALabel.font = UIFont.systemFont(ofSize: 28, weight: .regular)
+                    self?.pageSrcALabel.textColor = .lightGray
+                    self?.pageSrcALabel.sizeToFit()
+                    self?.view.addSubview(self!.pageSrcALabel)
+                    self?.pageSrcCLabel.font = UIFont.systemFont(ofSize: 28, weight: .regular)
+                    self?.pageSrcCLabel.textColor = .lightGray
+                    self?.pageSrcCLabel.sizeToFit()
+                    self?.view.addSubview(self!.pageSrcCLabel)
+                }
+            })
+        .disposed(by: disposeBag)
+        
+        pageSrcCBackgroundView = RoundShadowView(frame: CGRect(x: 50 + 300 + 80, y: self.view.frame.height - 50 - 235, width: 150, height: 75), cornerRadius: 75/2, shadowRadius: 4, shadowOffset: CGSize(width: 0, height: 1), shadowOpacity: 0.85, shadowColor: UIColor.clear.cgColor)
+        pageSrcCBackgroundView.backgroundColor = UIColor(red: 39/255, green: 41/255, blue: 45/255, alpha: 1.0)
+        pageSrcCBackgroundView.layer.cornerRadius = 75/2
+        pageSrcCBackgroundView.alpha = 0
+        
+        view.addSubview(pageSrcCBackgroundView)
+        
+        pageSrcCLabel = UILabel()
+        pageSrcCLabel.font = UIFont.systemFont(ofSize: 28, weight: .regular)
+        pageSrcCLabel.textColor = .lightGray
+        pageSrcCLabel.text = "Tray C"
+        pageSrcCLabel.sizeToFit()
+        pageSrcCLabel.alpha = 0
+        
+        view.addSubview(pageSrcCLabel)
+        pageSrcCLabel.snp.makeConstraints { (make) in
+            make.centerX.equalTo(pageSrcCBackgroundView.snp.centerX)
+            make.centerY.equalTo(pageSrcCBackgroundView.snp.centerY)
+        }
+        
+        pageSrcCBackgroundView.rx
+            .tapGesture()
+            .when(.recognized)
+            .subscribe(onNext: { [weak self] _ in
+                if self?.paperSource != "C" {
+                    self?.paperSource = "C"
+                    self?.pageSrcCLabel.font = UIFont.systemFont(ofSize: 28, weight: .bold)
+                    self?.pageSrcCLabel.textColor = .white
+                    self?.pageSrcCLabel.sizeToFit()
+                    self?.view.addSubview(self!.pageSrcCLabel)
+                    self?.pageSrcALabel.font = UIFont.systemFont(ofSize: 28, weight: .regular)
+                    self?.pageSrcALabel.textColor = .lightGray
+                    self?.pageSrcALabel.sizeToFit()
+                    self?.view.addSubview(self!.pageSrcALabel)
+                    self?.pageSrcBLabel.font = UIFont.systemFont(ofSize: 28, weight: .regular)
+                    self?.pageSrcBLabel.textColor = .lightGray
+                    self?.pageSrcBLabel.sizeToFit()
+                    self?.view.addSubview(self!.pageSrcBLabel)
+                }
+            })
+        .disposed(by: disposeBag)
+    }
+    
+    private func displayCancelButton() {
+        cancelBackgroundView = RoundShadowView(frame: CGRect(x: self.view.frame.width/2 - 100, y: self.view.frame.height - 50 - 75, width: 200, height: 75), cornerRadius: 75/2, shadowRadius: 4, shadowOffset: CGSize(width: 0, height: 1), shadowOpacity: 0.85, shadowColor: UIColor.clear.cgColor)
+
+        cancelBackgroundView.backgroundColor = UIColor(red: 39/255, green: 41/255, blue: 45/255, alpha: 1.0)
+        cancelBackgroundView.layer.cornerRadius = 75/2
+        cancelBackgroundView.alpha = 0
+        
+        view.addSubview(cancelBackgroundView)
+        
+        cancelLabel = UILabel()
+        cancelLabel.font = UIFont.systemFont(ofSize: 36, weight: .regular)
+        cancelLabel.textColor = .red
+        cancelLabel.text = "Cancel"
+        cancelLabel.sizeToFit()
+        cancelLabel.alpha = 0
+        
+        view.addSubview(cancelLabel)
+        cancelLabel.snp.makeConstraints { (make) in
+            make.centerX.equalTo(cancelBackgroundView.snp.centerX)
+            make.centerY.equalTo(cancelBackgroundView.snp.centerY)
+        }
+        
+        cancelLabel.rx
+            .tapGesture()
+            .when(.recognized)
+            .subscribe(onNext: { [weak self] _ in
+                self?.animateLoggedInExit()
+                self?.transitionToLoggedIn()
+            })
+        .disposed(by: disposeBag)
+    }
+    
+    private func displayPrintingCountdown() {
+//        printingLabel = UILabel()
+//        printingLabel.font = UIFont.systemFont(ofSize: 36, weight: .regular)
+//        printingLabel.textColor = .black
+//        printingLabel.sizeToFit()
+//        printingLabel.alpha = 0
+//        for curr in 1...numberOfCopies {
+//            printingLabeltext = "Printing Copy \(curr) of \(numberofCopies)"
+//        }
+//
+        
     }
     
     // MARK: - Transition
@@ -485,15 +956,25 @@ class PhotocopierViewController: UIViewController {
     }
     
     private func transitionToLoggedIn() {
-        animateNumberPadExit()
-        
         // Menu
         displayHeader()
         displayNumberOfCopies()
         displayBrightness()
         displayStartButton()
         displayPageSource()
+        displaySides()
+        displaySeparatorPage()
         animateMenuEntrance()
+    }
+    
+    private func transitionToPrinting() {
+        animateLoggedInExit()
+        
+        displayCancelButton()
+        animatePrintingEntrance()
+
+        // Menu
+        // insert functions here that will appear on the printing page
     }
     
     // MARK: - Animation
@@ -555,6 +1036,20 @@ class PhotocopierViewController: UIViewController {
             self.startLabel.alpha = 1
             self.pageSourceLabel.alpha = 1
             self.pageSrcABackgroundView.alpha = 1
+            self.pageSrcALabel.alpha = 1
+            self.pageSrcBBackgroundView.alpha = 1
+            self.pageSrcBLabel.alpha = 1
+            self.pageSrcCBackgroundView.alpha = 1
+            self.pageSrcCLabel.alpha = 1
+            self.sidesLabel.alpha = 1
+            self.oneToOneBackgroundView.alpha = 1
+            self.twoToTwoBackgroundView.alpha = 1
+            self.oneToTwoBackgroundView.alpha = 1
+            self.twoToOneBackgroundView.alpha = 1
+            self.oneToOneImageView.alpha = 1
+            self.twoToTwoImageView.alpha = 0.25
+            self.oneToTwoImageView.alpha = 0.25
+            self.twoToOneImageView.alpha = 0.25
         })
         
         animator.startAnimation()
@@ -578,6 +1073,27 @@ class PhotocopierViewController: UIViewController {
             self.displayEnter()
             self.displayNumberPad()
         }
+        
+        animator.startAnimation()
+    }
+    
+    private func animateLoggedInExit() {
+        let animator = UIViewPropertyAnimator(duration: 0.5, curve: .easeOut, animations: {
+            for view in self.view.subviews {
+                if view != self.titleLabel && view != self.accountNameLabel && view != self.logoutLabel {
+                    view.alpha = 0
+                }
+            }
+        })
+
+        animator.startAnimation()
+    }
+    
+    private func animatePrintingEntrance() {
+        let animator = UIViewPropertyAnimator(duration: 0.5, curve: .easeIn, animations: {
+            self.cancelBackgroundView.alpha = 1
+            self.cancelLabel.alpha = 1
+        })
         
         animator.startAnimation()
     }
@@ -619,7 +1135,7 @@ class PhotocopierViewController: UIViewController {
     private var startBackgroundView: RoundShadowView!
     private var startLabel: UILabel!
     
-    // Page Source
+    // Paper Source
     private var pageSourceLabel: UILabel!
     private var pageSrcALabel: UILabel!
     private var pageSrcABackgroundView: RoundShadowView!
@@ -627,6 +1143,32 @@ class PhotocopierViewController: UIViewController {
     private var pageSrcBBackgroundView: RoundShadowView!
     private var pageSrcCLabel: UILabel!
     private var pageSrcCBackgroundView: RoundShadowView!
+    
+    // Sides
+    private var sidesLabel: UILabel!
+    private var oneToOneImageView: UIImageView!
+    private var oneToOneBackgroundView: RoundShadowView!
+    private var oneToTwoImageView: UIImageView!
+    private var oneToTwoBackgroundView: RoundShadowView!
+    private var twoToTwoImageView: UIImageView!
+    private var twoToTwoBackgroundView: RoundShadowView!
+    private var twoToOneImageView: UIImageView!
+    private var twoToOneBackgroundView: RoundShadowView!
+    
+    // Separator Page
+    private var seperatorLabel: UILabel!
+    private var sepSrcALabel: UILabel!
+    private var sepSrcABackgroundView: RoundShadowView!
+    private var sepSrcBLabel: UILabel!
+    private var sepSrcBBackgroundView: RoundShadowView!
+    private var sepSrcCLabel: UILabel!
+    private var sepSrcCBackgroundView: RoundShadowView!
+    private var noSrcLabel: UILabel!
+    private var noSrcBackgroundView: RoundShadowView!
+    
+    // Cancel Button
+    private var cancelBackgroundView: RoundShadowView!
+    private var cancelLabel: UILabel!
     
     // Animation + Interaction
     private var generator = UIImpactFeedbackGenerator(style: .heavy)
