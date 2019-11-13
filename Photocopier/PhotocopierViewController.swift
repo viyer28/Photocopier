@@ -204,18 +204,26 @@ class PhotocopierViewController: UIViewController {
             make.top.equalTo(eightLabel.snp.bottom).offset(75)
         }
         
-        let backspaceLabel = UILabel()
+        backspaceButton = UIImageView(image: UIImage(named: "backButton"))
+        backspaceButton.contentMode = .scaleAspectFit
 
-        backspaceLabel.font = UIFont.systemFont(ofSize: 48, weight: .regular)
-        backspaceLabel.textColor = .red
-        backspaceLabel.text = "<"
-        backspaceLabel.sizeToFit()
-
-        view.addSubview(backspaceLabel)
-        backspaceLabel.snp.makeConstraints { (make) in
+        view.addSubview(backspaceButton)
+        backspaceButton.snp.makeConstraints { (make) in
             make.centerY.equalTo(zeroLabel.snp.centerY)
-            make.right.equalTo(zeroLabel.snp.left).offset(-100)
+            make.centerX.equalTo(sevenLabel.snp.centerX)
+            make.height.equalTo(45)
         }
+        
+        backspaceButton.rx
+            .tapGesture()
+            .when(.recognized)
+            .subscribe(onNext: { [weak self] _ in
+                if self?.accountCode != "" {
+                    self?.accountCode.remove(at: self!.accountCode.index(before: self!.accountCode.endIndex))
+                    self?.updateAccountDisplay()
+                }
+            })
+            .disposed(by: disposeBag)
         
         numberPad.append(oneLabel)
         numberPad.append(twoLabel)
@@ -227,7 +235,6 @@ class PhotocopierViewController: UIViewController {
         numberPad.append(eightLabel)
         numberPad.append(nineLabel)
         numberPad.append(zeroLabel)
-        numberPad.append(backspaceLabel)
         
         for number in numberPad {
             let button = UIView()
@@ -248,14 +255,11 @@ class PhotocopierViewController: UIViewController {
                 .subscribe(onNext: { [weak self] _ in
                     if (self?.accountCode.count)! < 4 {
                         self?.generator.impactOccurred()
-                        if number.text == "<" {
-                            self?.accountCode.remove(at: self!.accountCode.index(before: self!.accountCode.endIndex))
-                        } else {
-                            self?.accountCode.append(contentsOf: number.text!)
-                        }
+                        self?.accountCode.append(contentsOf: number.text!)
                         self?.animateNumberPad(label: number)
                         self?.updateAccountDisplay()
                         if self?.accountCode.count == 4 {
+                            self?.didCancel = false
                             self?.animateNumberPadExit()
                             self?.transitionToLoggedIn()
                         }
@@ -283,7 +287,7 @@ class PhotocopierViewController: UIViewController {
     
     private func displayHeader() {
         accountNameLabel = UILabel()
-        accountNameLabel.font = UIFont.systemFont(ofSize: 36, weight: .regular)
+        accountNameLabel.font = UIFont.systemFont(ofSize: 36, weight: .thin)
         accountNameLabel.textColor = .white
         accountNameLabel.text = "Account Code: #\(accountCode)"
         accountNameLabel.sizeToFit()
@@ -313,6 +317,12 @@ class PhotocopierViewController: UIViewController {
             .when(.recognized)
             .subscribe(onNext: { [weak self] _ in
                 self?.accountCode = ""
+                self?.didCancel = true
+                self?.numberOfCopies = 1
+                self?.pageBrightness = 0
+                self?.paperSource = "A"
+                self?.sides = "1-1"
+                self?.separatorPage = "None"
                 self?.transitionToLoggedOut()
             })
         .disposed(by: disposeBag)
@@ -320,7 +330,7 @@ class PhotocopierViewController: UIViewController {
     
     private func displayNumberOfCopies() {
         numCopiesDescrLabel = UILabel()
-        numCopiesDescrLabel.font = UIFont.systemFont(ofSize: 36, weight: .regular)
+        numCopiesDescrLabel.font = UIFont.systemFont(ofSize: 36, weight: .thin)
         numCopiesDescrLabel.textColor = .white
         numCopiesDescrLabel.text = "Number of Copies"
         numCopiesDescrLabel.sizeToFit()
@@ -378,7 +388,7 @@ class PhotocopierViewController: UIViewController {
     
     private func displayBrightness() {
         brightnessDescrLabel = UILabel()
-        brightnessDescrLabel.font = UIFont.systemFont(ofSize: 36, weight: .regular)
+        brightnessDescrLabel.font = UIFont.systemFont(ofSize: 36, weight: .thin)
         brightnessDescrLabel.textColor = .white
         brightnessDescrLabel.text = "Page Brightness"
         brightnessDescrLabel.sizeToFit()
@@ -386,7 +396,7 @@ class PhotocopierViewController: UIViewController {
         
         view.addSubview(brightnessDescrLabel)
         brightnessDescrLabel.snp.makeConstraints { (make) in
-            make.top.equalTo(numCopiesSlider.snp.bottom).offset(25)
+            make.top.equalTo(numCopiesSlider.snp.bottom).offset(50)
             make.left.equalTo(titleLabel.snp.left)
         }
         
@@ -399,7 +409,7 @@ class PhotocopierViewController: UIViewController {
         
         view.addSubview(brightnessLabel)
         brightnessLabel.snp.makeConstraints { (make) in
-            make.top.equalTo(numCopiesSlider.snp.bottom).offset(25)
+            make.top.equalTo(numCopiesSlider.snp.bottom).offset(50)
             make.right.equalTo(self.view.snp.centerX).offset(-25)
         }
         
@@ -430,7 +440,7 @@ class PhotocopierViewController: UIViewController {
         brightnessLabel.text = "\(pageBrightness)%"
         view.addSubview(brightnessLabel)
         brightnessLabel.snp.makeConstraints { (make) in
-            make.top.equalTo(numCopiesSlider.snp.bottom).offset(25)
+            make.top.equalTo(numCopiesSlider.snp.bottom).offset(50)
             make.right.equalTo(self.view.snp.centerX).offset(-25)
         }
     }
@@ -467,7 +477,7 @@ class PhotocopierViewController: UIViewController {
     
     private func displayPageSource() {
         pageSourceLabel = UILabel()
-        pageSourceLabel.font = UIFont.systemFont(ofSize: 36, weight: .regular)
+        pageSourceLabel.font = UIFont.systemFont(ofSize: 36, weight: .thin)
         pageSourceLabel.textColor = .white
         pageSourceLabel.text = "Paper Source"
         pageSourceLabel.sizeToFit()
@@ -475,11 +485,11 @@ class PhotocopierViewController: UIViewController {
         
         view.addSubview(pageSourceLabel)
         pageSourceLabel.snp.makeConstraints { (make) in
-            make.top.equalTo(brightnessSlider.snp.bottom).offset(25)
+            make.top.equalTo(seperatorLabel.snp.top)
             make.left.equalTo(titleLabel.snp.left)
         }
         
-        pageSrcABackgroundView = RoundShadowView(frame: CGRect(x: 50, y: self.view.frame.height - 50 - 235, width: 150, height: 75), cornerRadius: 75/2, shadowRadius: 4, shadowOffset: CGSize(width: 0, height: 1), shadowOpacity: 0.85, shadowColor: UIColor.clear.cgColor)
+        pageSrcABackgroundView = RoundShadowView(frame: CGRect(x: 50, y: self.view.frame.height - 50 - 195, width: 100, height: 75), cornerRadius: 75/2, shadowRadius: 4, shadowOffset: CGSize(width: 0, height: 1), shadowOpacity: 0.85, shadowColor: UIColor.clear.cgColor)
         pageSrcABackgroundView.backgroundColor = UIColor(red: 39/255, green: 41/255, blue: 45/255, alpha: 1.0)
         pageSrcABackgroundView.layer.cornerRadius = 75/2
         pageSrcABackgroundView.alpha = 0
@@ -487,7 +497,7 @@ class PhotocopierViewController: UIViewController {
         view.addSubview(pageSrcABackgroundView)
         
         pageSrcALabel = UILabel()
-        pageSrcALabel.font = UIFont.systemFont(ofSize: 28, weight: .bold)
+        pageSrcALabel.font = UIFont.systemFont(ofSize: 24, weight: .bold)
         pageSrcALabel.textColor = .white
         pageSrcALabel.text = "Tray A"
         pageSrcALabel.sizeToFit()
@@ -505,15 +515,15 @@ class PhotocopierViewController: UIViewController {
             .subscribe(onNext: { [weak self] _ in
                 if self?.paperSource != "A" {
                     self?.paperSource = "A"
-                    self?.pageSrcALabel.font = UIFont.systemFont(ofSize: 28, weight: .bold)
+                    self?.pageSrcALabel.font = UIFont.systemFont(ofSize: 24, weight: .bold)
                     self?.pageSrcALabel.textColor = .white
                     self?.pageSrcALabel.sizeToFit()
                     self?.view.addSubview(self!.pageSrcALabel)
-                    self?.pageSrcBLabel.font = UIFont.systemFont(ofSize: 28, weight: .regular)
+                    self?.pageSrcBLabel.font = UIFont.systemFont(ofSize: 24, weight: .regular)
                     self?.pageSrcBLabel.textColor = .lightGray
                     self?.pageSrcBLabel.sizeToFit()
                     self?.view.addSubview(self!.pageSrcBLabel)
-                    self?.pageSrcCLabel.font = UIFont.systemFont(ofSize: 28, weight: .regular)
+                    self?.pageSrcCLabel.font = UIFont.systemFont(ofSize: 24, weight: .regular)
                     self?.pageSrcCLabel.textColor = .lightGray
                     self?.pageSrcCLabel.sizeToFit()
                     self?.view.addSubview(self!.pageSrcCLabel)
@@ -521,7 +531,7 @@ class PhotocopierViewController: UIViewController {
             })
             .disposed(by: disposeBag)
         
-        pageSrcBBackgroundView = RoundShadowView(frame: CGRect(x: 50 + 150 + 40, y: self.view.frame.height - 50 - 235, width: 150, height: 75), cornerRadius: 75/2, shadowRadius: 4, shadowOffset: CGSize(width: 0, height: 1), shadowOpacity: 0.85, shadowColor: UIColor.clear.cgColor)
+        pageSrcBBackgroundView = RoundShadowView(frame: CGRect(x: 50 + 100 + 30, y: self.view.frame.height - 50 - 195, width: 100, height: 75), cornerRadius: 75/2, shadowRadius: 4, shadowOffset: CGSize(width: 0, height: 1), shadowOpacity: 0.85, shadowColor: UIColor.clear.cgColor)
         pageSrcBBackgroundView.backgroundColor = UIColor(red: 39/255, green: 41/255, blue: 45/255, alpha: 1.0)
         pageSrcBBackgroundView.layer.cornerRadius = 75/2
         pageSrcBBackgroundView.alpha = 0
@@ -529,7 +539,7 @@ class PhotocopierViewController: UIViewController {
         view.addSubview(pageSrcBBackgroundView)
         
         pageSrcBLabel = UILabel()
-        pageSrcBLabel.font = UIFont.systemFont(ofSize: 28, weight: .regular)
+        pageSrcBLabel.font = UIFont.systemFont(ofSize: 24, weight: .regular)
         pageSrcBLabel.textColor = .lightGray
         pageSrcBLabel.text = "Tray B"
         pageSrcBLabel.sizeToFit()
@@ -547,15 +557,15 @@ class PhotocopierViewController: UIViewController {
             .subscribe(onNext: { [weak self] _ in
                 if self?.paperSource != "B" {
                     self?.paperSource = "B"
-                    self?.pageSrcBLabel.font = UIFont.systemFont(ofSize: 28, weight: .bold)
+                    self?.pageSrcBLabel.font = UIFont.systemFont(ofSize: 24, weight: .bold)
                     self?.pageSrcBLabel.textColor = .white
                     self?.pageSrcBLabel.sizeToFit()
                     self?.view.addSubview(self!.pageSrcBLabel)
-                    self?.pageSrcALabel.font = UIFont.systemFont(ofSize: 28, weight: .regular)
+                    self?.pageSrcALabel.font = UIFont.systemFont(ofSize: 24, weight: .regular)
                     self?.pageSrcALabel.textColor = .lightGray
                     self?.pageSrcALabel.sizeToFit()
                     self?.view.addSubview(self!.pageSrcALabel)
-                    self?.pageSrcCLabel.font = UIFont.systemFont(ofSize: 28, weight: .regular)
+                    self?.pageSrcCLabel.font = UIFont.systemFont(ofSize: 24, weight: .regular)
                     self?.pageSrcCLabel.textColor = .lightGray
                     self?.pageSrcCLabel.sizeToFit()
                     self?.view.addSubview(self!.pageSrcCLabel)
@@ -563,7 +573,7 @@ class PhotocopierViewController: UIViewController {
             })
         .disposed(by: disposeBag)
         
-        pageSrcCBackgroundView = RoundShadowView(frame: CGRect(x: 50 + 300 + 80, y: self.view.frame.height - 50 - 235, width: 150, height: 75), cornerRadius: 75/2, shadowRadius: 4, shadowOffset: CGSize(width: 0, height: 1), shadowOpacity: 0.85, shadowColor: UIColor.clear.cgColor)
+        pageSrcCBackgroundView = RoundShadowView(frame: CGRect(x: 50 + 200 + 60, y: self.view.frame.height - 50 - 195, width: 100, height: 75), cornerRadius: 75/2, shadowRadius: 4, shadowOffset: CGSize(width: 0, height: 1), shadowOpacity: 0.85, shadowColor: UIColor.clear.cgColor)
         pageSrcCBackgroundView.backgroundColor = UIColor(red: 39/255, green: 41/255, blue: 45/255, alpha: 1.0)
         pageSrcCBackgroundView.layer.cornerRadius = 75/2
         pageSrcCBackgroundView.alpha = 0
@@ -571,7 +581,7 @@ class PhotocopierViewController: UIViewController {
         view.addSubview(pageSrcCBackgroundView)
         
         pageSrcCLabel = UILabel()
-        pageSrcCLabel.font = UIFont.systemFont(ofSize: 28, weight: .regular)
+        pageSrcCLabel.font = UIFont.systemFont(ofSize: 24, weight: .regular)
         pageSrcCLabel.textColor = .lightGray
         pageSrcCLabel.text = "Tray C"
         pageSrcCLabel.sizeToFit()
@@ -589,15 +599,15 @@ class PhotocopierViewController: UIViewController {
             .subscribe(onNext: { [weak self] _ in
                 if self?.paperSource != "C" {
                     self?.paperSource = "C"
-                    self?.pageSrcCLabel.font = UIFont.systemFont(ofSize: 28, weight: .bold)
+                    self?.pageSrcCLabel.font = UIFont.systemFont(ofSize: 24, weight: .bold)
                     self?.pageSrcCLabel.textColor = .white
                     self?.pageSrcCLabel.sizeToFit()
                     self?.view.addSubview(self!.pageSrcCLabel)
-                    self?.pageSrcALabel.font = UIFont.systemFont(ofSize: 28, weight: .regular)
+                    self?.pageSrcALabel.font = UIFont.systemFont(ofSize: 24, weight: .regular)
                     self?.pageSrcALabel.textColor = .lightGray
                     self?.pageSrcALabel.sizeToFit()
                     self?.view.addSubview(self!.pageSrcALabel)
-                    self?.pageSrcBLabel.font = UIFont.systemFont(ofSize: 28, weight: .regular)
+                    self?.pageSrcBLabel.font = UIFont.systemFont(ofSize: 24, weight: .regular)
                     self?.pageSrcBLabel.textColor = .lightGray
                     self?.pageSrcBLabel.sizeToFit()
                     self?.view.addSubview(self!.pageSrcBLabel)
@@ -608,7 +618,7 @@ class PhotocopierViewController: UIViewController {
     
     private func displaySides() {
         sidesLabel = UILabel()
-        sidesLabel.font = UIFont.systemFont(ofSize: 36, weight: .regular)
+        sidesLabel.font = UIFont.systemFont(ofSize: 36, weight: .thin)
         sidesLabel.textColor = .white
         sidesLabel.text = "Sides"
         sidesLabel.sizeToFit()
@@ -635,9 +645,9 @@ class PhotocopierViewController: UIViewController {
                 if self?.sides != "1-1" {
                     self?.sides = "1-1"
                     self?.oneToOneImageView.alpha = 1
-                    self?.oneToTwoImageView.alpha = 0.5
-                    self?.twoToOneImageView.alpha = 0.5
-                    self?.twoToTwoImageView.alpha = 0.5
+                    self?.oneToTwoImageView.alpha = 0.25
+                    self?.twoToOneImageView.alpha = 0.25
+                    self?.twoToTwoImageView.alpha = 0.25
                 }
             })
             .disposed(by: disposeBag)
@@ -656,9 +666,9 @@ class PhotocopierViewController: UIViewController {
             .subscribe(onNext: { [weak self] _ in
                 if self?.sides != "2-2" {
                     self?.sides = "2-2"
-                    self?.oneToOneImageView.alpha = 0.5
-                    self?.oneToTwoImageView.alpha = 0.5
-                    self?.twoToOneImageView.alpha = 0.5
+                    self?.oneToOneImageView.alpha = 0.25
+                    self?.oneToTwoImageView.alpha = 0.25
+                    self?.twoToOneImageView.alpha = 0.25
                     self?.twoToTwoImageView.alpha = 1
                 }
             })
@@ -678,10 +688,10 @@ class PhotocopierViewController: UIViewController {
             .subscribe(onNext: { [weak self] _ in
                 if self?.sides != "1-2" {
                     self?.sides = "1-2"
-                    self?.oneToOneImageView.alpha = 0.5
+                    self?.oneToOneImageView.alpha = 0.25
                     self?.oneToTwoImageView.alpha = 1
-                    self?.twoToOneImageView.alpha = 0.5
-                    self?.twoToTwoImageView.alpha = 0.5
+                    self?.twoToOneImageView.alpha = 0.25
+                    self?.twoToTwoImageView.alpha = 0.25
                 }
             })
             .disposed(by: disposeBag)
@@ -700,10 +710,10 @@ class PhotocopierViewController: UIViewController {
             .subscribe(onNext: { [weak self] _ in
                 if self?.sides != "2-1" {
                     self?.sides = "2-1"
-                    self?.oneToOneImageView.alpha = 0.5
-                    self?.oneToTwoImageView.alpha = 0.5
+                    self?.oneToOneImageView.alpha = 0.25
+                    self?.oneToTwoImageView.alpha = 0.25
                     self?.twoToOneImageView.alpha = 1
-                    self?.twoToTwoImageView.alpha = 0.5
+                    self?.twoToTwoImageView.alpha = 0.25
                 }
             })
             .disposed(by: disposeBag)
@@ -754,151 +764,199 @@ class PhotocopierViewController: UIViewController {
     }
     
     private func displaySeparatorPage() {
-//        private var seperatorLabel: UILabel!
-//        private var sepSrcALabel: UILabel!
-//        private var sepSrcABackgroundView: RoundShadowView!
-//        private var sepSrcBLabel: UILabel!
-//        private var sepSrcBBackgroundView: RoundShadowView!
-//        private var sepSrcCLabel: UILabel!
-//        private var sepSrcCBackgroundView: RoundShadowView!
-//        private var noSrcLabel: UILabel!
-//        private var noSrcBackgroundView: RoundShadowView!
-        
         seperatorLabel = UILabel()
-        seperatorLabel.font = UIFont.systemFont(ofSize: 36, weight: .regular)
+        seperatorLabel.font = UIFont.systemFont(ofSize: 36, weight: .thin)
         seperatorLabel.textColor = .white
-        seperatorLabel.text = "Seperator Page"
+        seperatorLabel.text = "Separator Page"
         seperatorLabel.sizeToFit()
         seperatorLabel.alpha = 0
         
         view.addSubview(seperatorLabel)
         seperatorLabel.snp.makeConstraints { (make) in
-            make.top.equalTo(twoToTwoBackgroundView.snp.bottom).offset(25)
+            make.top.equalTo(oneToTwoBackgroundView.snp.bottom).offset(50)
             make.left.equalTo(sidesLabel.snp.left)
         }
         
-        sepSrcABackgroundView = RoundShadowView(frame: CGRect(x: self.view.frame.width/2 + 50, y: self.view.frame.height - 50 - 235, width: 150, height: 75), cornerRadius: 75/2, shadowRadius: 4, shadowOffset: CGSize(width: 0, height: 1), shadowOpacity: 0.85, shadowColor: UIColor.clear.cgColor)
-        pageSrcABackgroundView.backgroundColor = UIColor(red: 39/255, green: 41/255, blue: 45/255, alpha: 1.0)
-        pageSrcABackgroundView.layer.cornerRadius = 75/2
-        pageSrcABackgroundView.alpha = 0
+        noSrcBackgroundView = RoundShadowView(frame: CGRect(x: self.view.frame.width/2 + 50, y: self.view.frame.height - 50 - 195, width: 100, height: 75), cornerRadius: 75/2, shadowRadius: 4, shadowOffset: CGSize(width: 0, height: 1), shadowOpacity: 0.85, shadowColor: UIColor.clear.cgColor)
+        noSrcBackgroundView.backgroundColor = UIColor(red: 39/255, green: 41/255, blue: 45/255, alpha: 1.0)
+        noSrcBackgroundView.layer.cornerRadius = 75/2
+        noSrcBackgroundView.alpha = 0
         
-        view.addSubview(pageSrcABackgroundView)
+        view.addSubview(noSrcBackgroundView)
         
-        pageSrcALabel = UILabel()
-        pageSrcALabel.font = UIFont.systemFont(ofSize: 28, weight: .bold)
-        pageSrcALabel.textColor = .white
-        pageSrcALabel.text = "Tray A"
-        pageSrcALabel.sizeToFit()
-        pageSrcALabel.alpha = 0
+        noSrcLabel = UILabel()
+        noSrcLabel.font = UIFont.systemFont(ofSize: 24, weight: .bold)
+        noSrcLabel.textColor = .white
+        noSrcLabel.text = "None"
+        noSrcLabel.sizeToFit()
+        noSrcLabel.alpha = 0
         
-        view.addSubview(pageSrcALabel)
-        pageSrcALabel.snp.makeConstraints { (make) in
-            make.centerX.equalTo(pageSrcABackgroundView.snp.centerX)
-            make.centerY.equalTo(pageSrcABackgroundView.snp.centerY)
+        view.addSubview(noSrcLabel)
+        noSrcLabel.snp.makeConstraints { (make) in
+            make.centerX.equalTo(noSrcBackgroundView.snp.centerX)
+            make.centerY.equalTo(noSrcBackgroundView.snp.centerY)
         }
         
-        pageSrcABackgroundView.rx
+        noSrcBackgroundView.rx
             .tapGesture()
             .when(.recognized)
             .subscribe(onNext: { [weak self] _ in
-                if self?.paperSource != "A" {
-                    self?.paperSource = "A"
-                    self?.pageSrcALabel.font = UIFont.systemFont(ofSize: 28, weight: .bold)
-                    self?.pageSrcALabel.textColor = .white
-                    self?.pageSrcALabel.sizeToFit()
-                    self?.view.addSubview(self!.pageSrcALabel)
-                    self?.pageSrcBLabel.font = UIFont.systemFont(ofSize: 28, weight: .regular)
-                    self?.pageSrcBLabel.textColor = .lightGray
-                    self?.pageSrcBLabel.sizeToFit()
-                    self?.view.addSubview(self!.pageSrcBLabel)
-                    self?.pageSrcCLabel.font = UIFont.systemFont(ofSize: 28, weight: .regular)
-                    self?.pageSrcCLabel.textColor = .lightGray
-                    self?.pageSrcCLabel.sizeToFit()
-                    self?.view.addSubview(self!.pageSrcCLabel)
-                }
-            })
-            .disposed(by: disposeBag)
-        
-        pageSrcBBackgroundView = RoundShadowView(frame: CGRect(x: 50 + 150 + 40, y: self.view.frame.height - 50 - 235, width: 150, height: 75), cornerRadius: 75/2, shadowRadius: 4, shadowOffset: CGSize(width: 0, height: 1), shadowOpacity: 0.85, shadowColor: UIColor.clear.cgColor)
-        pageSrcBBackgroundView.backgroundColor = UIColor(red: 39/255, green: 41/255, blue: 45/255, alpha: 1.0)
-        pageSrcBBackgroundView.layer.cornerRadius = 75/2
-        pageSrcBBackgroundView.alpha = 0
-        
-        view.addSubview(pageSrcBBackgroundView)
-        
-        pageSrcBLabel = UILabel()
-        pageSrcBLabel.font = UIFont.systemFont(ofSize: 28, weight: .regular)
-        pageSrcBLabel.textColor = .lightGray
-        pageSrcBLabel.text = "Tray B"
-        pageSrcBLabel.sizeToFit()
-        pageSrcBLabel.alpha = 0
-        
-        view.addSubview(pageSrcBLabel)
-        pageSrcBLabel.snp.makeConstraints { (make) in
-            make.centerX.equalTo(pageSrcBBackgroundView.snp.centerX)
-            make.centerY.equalTo(pageSrcBBackgroundView.snp.centerY)
-        }
-        
-        pageSrcBBackgroundView.rx
-            .tapGesture()
-            .when(.recognized)
-            .subscribe(onNext: { [weak self] _ in
-                if self?.paperSource != "B" {
-                    self?.paperSource = "B"
-                    self?.pageSrcBLabel.font = UIFont.systemFont(ofSize: 28, weight: .bold)
-                    self?.pageSrcBLabel.textColor = .white
-                    self?.pageSrcBLabel.sizeToFit()
-                    self?.view.addSubview(self!.pageSrcBLabel)
-                    self?.pageSrcALabel.font = UIFont.systemFont(ofSize: 28, weight: .regular)
-                    self?.pageSrcALabel.textColor = .lightGray
-                    self?.pageSrcALabel.sizeToFit()
-                    self?.view.addSubview(self!.pageSrcALabel)
-                    self?.pageSrcCLabel.font = UIFont.systemFont(ofSize: 28, weight: .regular)
-                    self?.pageSrcCLabel.textColor = .lightGray
-                    self?.pageSrcCLabel.sizeToFit()
-                    self?.view.addSubview(self!.pageSrcCLabel)
+                if self?.separatorPage != "None" {
+                    self?.separatorPage = "None"
+                    self?.sepSrcCLabel.font = UIFont.systemFont(ofSize: 24, weight: .regular)
+                    self?.sepSrcCLabel.textColor = .lightGray
+                    self?.sepSrcCLabel.sizeToFit()
+                    self?.view.addSubview(self!.sepSrcCLabel)
+                    self?.sepSrcALabel.font = UIFont.systemFont(ofSize: 24, weight: .regular)
+                    self?.sepSrcALabel.textColor = .lightGray
+                    self?.sepSrcALabel.sizeToFit()
+                    self?.view.addSubview(self!.sepSrcALabel)
+                    self?.sepSrcBLabel.font = UIFont.systemFont(ofSize: 24, weight: .regular)
+                    self?.sepSrcBLabel.textColor = .lightGray
+                    self?.sepSrcBLabel.sizeToFit()
+                    self?.view.addSubview(self!.sepSrcBLabel)
+                    self?.noSrcLabel.font = UIFont.systemFont(ofSize: 24, weight: .bold)
+                    self?.noSrcLabel.textColor = .white
+                    self?.noSrcLabel.sizeToFit()
+                    self?.view.addSubview(self!.noSrcLabel)
                 }
             })
         .disposed(by: disposeBag)
         
-        pageSrcCBackgroundView = RoundShadowView(frame: CGRect(x: 50 + 300 + 80, y: self.view.frame.height - 50 - 235, width: 150, height: 75), cornerRadius: 75/2, shadowRadius: 4, shadowOffset: CGSize(width: 0, height: 1), shadowOpacity: 0.85, shadowColor: UIColor.clear.cgColor)
-        pageSrcCBackgroundView.backgroundColor = UIColor(red: 39/255, green: 41/255, blue: 45/255, alpha: 1.0)
-        pageSrcCBackgroundView.layer.cornerRadius = 75/2
-        pageSrcCBackgroundView.alpha = 0
+        sepSrcABackgroundView = RoundShadowView(frame: CGRect(x: self.view.frame.width/2 + 50 + 100 + 30, y: self.view.frame.height - 50 - 195, width: 100, height: 75), cornerRadius: 75/2, shadowRadius: 4, shadowOffset: CGSize(width: 0, height: 1), shadowOpacity: 0.85, shadowColor: UIColor.clear.cgColor)
+        sepSrcABackgroundView.backgroundColor = UIColor(red: 39/255, green: 41/255, blue: 45/255, alpha: 1.0)
+        sepSrcABackgroundView.layer.cornerRadius = 75/2
+        sepSrcABackgroundView.alpha = 0
         
-        view.addSubview(pageSrcCBackgroundView)
+        view.addSubview(sepSrcABackgroundView)
         
-        pageSrcCLabel = UILabel()
-        pageSrcCLabel.font = UIFont.systemFont(ofSize: 28, weight: .regular)
-        pageSrcCLabel.textColor = .lightGray
-        pageSrcCLabel.text = "Tray C"
-        pageSrcCLabel.sizeToFit()
-        pageSrcCLabel.alpha = 0
+        sepSrcALabel = UILabel()
+        sepSrcALabel.font = UIFont.systemFont(ofSize: 24, weight: .regular)
+        sepSrcALabel.textColor = .lightGray
+        sepSrcALabel.text = "Tray A"
+        sepSrcALabel.sizeToFit()
+        sepSrcALabel.alpha = 0
         
-        view.addSubview(pageSrcCLabel)
-        pageSrcCLabel.snp.makeConstraints { (make) in
-            make.centerX.equalTo(pageSrcCBackgroundView.snp.centerX)
-            make.centerY.equalTo(pageSrcCBackgroundView.snp.centerY)
+        view.addSubview(sepSrcALabel)
+        sepSrcALabel.snp.makeConstraints { (make) in
+            make.centerX.equalTo(sepSrcABackgroundView.snp.centerX)
+            make.centerY.equalTo(sepSrcABackgroundView.snp.centerY)
         }
         
-        pageSrcCBackgroundView.rx
+        sepSrcABackgroundView.rx
             .tapGesture()
             .when(.recognized)
             .subscribe(onNext: { [weak self] _ in
-                if self?.paperSource != "C" {
-                    self?.paperSource = "C"
-                    self?.pageSrcCLabel.font = UIFont.systemFont(ofSize: 28, weight: .bold)
-                    self?.pageSrcCLabel.textColor = .white
-                    self?.pageSrcCLabel.sizeToFit()
-                    self?.view.addSubview(self!.pageSrcCLabel)
-                    self?.pageSrcALabel.font = UIFont.systemFont(ofSize: 28, weight: .regular)
-                    self?.pageSrcALabel.textColor = .lightGray
-                    self?.pageSrcALabel.sizeToFit()
-                    self?.view.addSubview(self!.pageSrcALabel)
-                    self?.pageSrcBLabel.font = UIFont.systemFont(ofSize: 28, weight: .regular)
-                    self?.pageSrcBLabel.textColor = .lightGray
-                    self?.pageSrcBLabel.sizeToFit()
-                    self?.view.addSubview(self!.pageSrcBLabel)
+                if self?.separatorPage != "A" {
+                    self?.separatorPage = "A"
+                    self?.sepSrcALabel.font = UIFont.systemFont(ofSize: 24, weight: .bold)
+                    self?.sepSrcALabel.textColor = .white
+                    self?.sepSrcALabel.sizeToFit()
+                    self?.view.addSubview(self!.sepSrcALabel)
+                    self?.sepSrcBLabel.font = UIFont.systemFont(ofSize: 24, weight: .regular)
+                    self?.sepSrcBLabel.textColor = .lightGray
+                    self?.sepSrcBLabel.sizeToFit()
+                    self?.view.addSubview(self!.sepSrcALabel)
+                    self?.sepSrcCLabel.font = UIFont.systemFont(ofSize: 24, weight: .regular)
+                    self?.sepSrcCLabel.textColor = .lightGray
+                    self?.sepSrcCLabel.sizeToFit()
+                    self?.view.addSubview(self!.sepSrcCLabel)
+                    self?.noSrcLabel.font = UIFont.systemFont(ofSize: 24, weight: .regular)
+                    self?.noSrcLabel.textColor = .lightGray
+                    self?.noSrcLabel.sizeToFit()
+                    self?.view.addSubview(self!.noSrcLabel)
+                }
+            })
+            .disposed(by: disposeBag)
+        
+        sepSrcBBackgroundView = RoundShadowView(frame: CGRect(x: self.view.frame.width/2 + 50 + 200 + 60, y: self.view.frame.height - 50 - 195, width: 100, height: 75), cornerRadius: 75/2, shadowRadius: 4, shadowOffset: CGSize(width: 0, height: 1), shadowOpacity: 0.85, shadowColor: UIColor.clear.cgColor)
+        sepSrcBBackgroundView.backgroundColor = UIColor(red: 39/255, green: 41/255, blue: 45/255, alpha: 1.0)
+        sepSrcBBackgroundView.layer.cornerRadius = 75/2
+        sepSrcBBackgroundView.alpha = 0
+        
+        view.addSubview(sepSrcBBackgroundView)
+        
+        sepSrcBLabel = UILabel()
+        sepSrcBLabel.font = UIFont.systemFont(ofSize: 24, weight: .regular)
+        sepSrcBLabel.textColor = .lightGray
+        sepSrcBLabel.text = "Tray B"
+        sepSrcBLabel.sizeToFit()
+        sepSrcBLabel.alpha = 0
+        
+        view.addSubview(sepSrcBLabel)
+        sepSrcBLabel.snp.makeConstraints { (make) in
+            make.centerX.equalTo(sepSrcBBackgroundView.snp.centerX)
+            make.centerY.equalTo(sepSrcBBackgroundView.snp.centerY)
+        }
+        
+        sepSrcBBackgroundView.rx
+            .tapGesture()
+            .when(.recognized)
+            .subscribe(onNext: { [weak self] _ in
+                if self?.separatorPage != "B" {
+                    self?.separatorPage = "B"
+                    self?.sepSrcBLabel.font = UIFont.systemFont(ofSize: 24, weight: .bold)
+                    self?.sepSrcBLabel.textColor = .white
+                    self?.sepSrcBLabel.sizeToFit()
+                    self?.view.addSubview(self!.sepSrcBLabel)
+                    self?.sepSrcALabel.font = UIFont.systemFont(ofSize: 24, weight: .regular)
+                    self?.sepSrcALabel.textColor = .lightGray
+                    self?.sepSrcALabel.sizeToFit()
+                    self?.view.addSubview(self!.sepSrcALabel)
+                    self?.sepSrcCLabel.font = UIFont.systemFont(ofSize: 24, weight: .regular)
+                    self?.sepSrcCLabel.textColor = .lightGray
+                    self?.sepSrcCLabel.sizeToFit()
+                    self?.view.addSubview(self!.sepSrcCLabel)
+                    self?.noSrcLabel.font = UIFont.systemFont(ofSize: 24, weight: .regular)
+                    self?.noSrcLabel.textColor = .lightGray
+                    self?.noSrcLabel.sizeToFit()
+                    self?.view.addSubview(self!.noSrcLabel)
+                }
+            })
+        .disposed(by: disposeBag)
+        
+        sepSrcCBackgroundView = RoundShadowView(frame: CGRect(x: self.view.frame.width/2 + 50 + 300 + 90, y: self.view.frame.height - 50 - 195, width: 100, height: 75), cornerRadius: 75/2, shadowRadius: 4, shadowOffset: CGSize(width: 0, height: 1), shadowOpacity: 0.85, shadowColor: UIColor.clear.cgColor)
+        sepSrcCBackgroundView.backgroundColor = UIColor(red: 39/255, green: 41/255, blue: 45/255, alpha: 1.0)
+        sepSrcCBackgroundView.layer.cornerRadius = 75/2
+        sepSrcCBackgroundView.alpha = 0
+        
+        view.addSubview(sepSrcCBackgroundView)
+        
+        sepSrcCLabel = UILabel()
+        sepSrcCLabel.font = UIFont.systemFont(ofSize: 24, weight: .regular)
+        sepSrcCLabel.textColor = .lightGray
+        sepSrcCLabel.text = "Tray C"
+        sepSrcCLabel.sizeToFit()
+        sepSrcCLabel.alpha = 0
+        
+        view.addSubview(sepSrcCLabel)
+        sepSrcCLabel.snp.makeConstraints { (make) in
+            make.centerX.equalTo(sepSrcCBackgroundView.snp.centerX)
+            make.centerY.equalTo(sepSrcCBackgroundView.snp.centerY)
+        }
+        
+        sepSrcCBackgroundView.rx
+            .tapGesture()
+            .when(.recognized)
+            .subscribe(onNext: { [weak self] _ in
+                if self?.separatorPage != "C" {
+                    self?.separatorPage = "C"
+                    self?.sepSrcCLabel.font = UIFont.systemFont(ofSize: 24, weight: .bold)
+                    self?.sepSrcCLabel.textColor = .white
+                    self?.sepSrcCLabel.sizeToFit()
+                    self?.view.addSubview(self!.sepSrcCLabel)
+                    self?.sepSrcALabel.font = UIFont.systemFont(ofSize: 24, weight: .regular)
+                    self?.sepSrcALabel.textColor = .lightGray
+                    self?.sepSrcALabel.sizeToFit()
+                    self?.view.addSubview(self!.sepSrcALabel)
+                    self?.sepSrcBLabel.font = UIFont.systemFont(ofSize: 24, weight: .regular)
+                    self?.sepSrcBLabel.textColor = .lightGray
+                    self?.sepSrcBLabel.sizeToFit()
+                    self?.view.addSubview(self!.sepSrcBLabel)
+                    self?.noSrcLabel.font = UIFont.systemFont(ofSize: 24, weight: .regular)
+                    self?.noSrcLabel.textColor = .lightGray
+                    self?.noSrcLabel.sizeToFit()
+                    self?.view.addSubview(self!.noSrcLabel)
                 }
             })
         .disposed(by: disposeBag)
@@ -930,24 +988,71 @@ class PhotocopierViewController: UIViewController {
             .tapGesture()
             .when(.recognized)
             .subscribe(onNext: { [weak self] _ in
-                self?.animateLoggedInExit()
-                self?.transitionToLoggedIn()
+                self?.didCancel = true
             })
         .disposed(by: disposeBag)
     }
     
-    private func displayPrintingCountdown() {
-//        printingLabel = UILabel()
-//        printingLabel.font = UIFont.systemFont(ofSize: 36, weight: .regular)
-//        printingLabel.textColor = .black
-//        printingLabel.sizeToFit()
-//        printingLabel.alpha = 0
-//        for curr in 1...numberOfCopies {
-//            printingLabeltext = "Printing Copy \(curr) of \(numberofCopies)"
-//        }
-//
+    private func displayPrintStatus() {
+        statusLabel = UILabel()
+        statusLabel.font = UIFont.systemFont(ofSize: 64, weight: .thin)
+        statusLabel.text = "Printing copy 1 of \(self.numberOfCopies)"
+        statusLabel.textColor = .white
+        statusLabel.sizeToFit()
+
+        view.addSubview(statusLabel)
+        statusLabel.snp.makeConstraints { (make) in
+            make.bottom.equalTo(self.view.snp.centerY).offset(-12.5)
+            make.centerX.equalTo(self.view.snp.centerX)
+        }
         
+        progressView = UIProgressView()
+        progressView.progress = 0.0
+        progressView.progressTintColor = .green
+        progressView.progressViewStyle = .default
+        progressView.alpha = 0
+        
+        view.addSubview(progressView)
+        progressView.snp.makeConstraints { (make) in
+            make.top.equalTo(self.statusLabel.snp.bottom).offset(25)
+            make.centerX.equalTo(self.view.snp.centerX)
+            make.width.equalTo(self.statusLabel.snp.width)
+        }
     }
+    
+    private func updatePrintStatus() {
+        var runCount = 1
+
+        Timer.scheduledTimer(withTimeInterval: 0.25, repeats: true) { timer in
+            self.statusLabel.text = "Printing copy " + String(runCount) + " of " + String(self.numberOfCopies)
+            self.progressView.setProgress(Float(runCount)/Float(self.numberOfCopies), animated: true)
+            runCount += 1
+            
+            if self.didCancel {
+                timer.invalidate()
+                self.animateLoggedInExit()
+                self.transitionToLoggedIn()
+                self.numberOfCopies = 1
+                self.pageBrightness = 0
+                self.paperSource = "A"
+                self.sides = "1-1"
+                self.separatorPage = "None"
+                self.didCancel = false
+            } else {
+                if runCount == (self.numberOfCopies+1) {
+                    timer.invalidate()
+                    self.animateLoggedInExit()
+                    self.numberOfCopies = 1
+                    self.pageBrightness = 0
+                    self.paperSource = "A"
+                    self.sides = "1-1"
+                    self.separatorPage = "None"
+                    self.transitionToLoggedIn()
+                }
+            }
+        }
+    }
+
     
     // MARK: - Transition
     
@@ -961,9 +1066,9 @@ class PhotocopierViewController: UIViewController {
         displayNumberOfCopies()
         displayBrightness()
         displayStartButton()
-        displayPageSource()
         displaySides()
         displaySeparatorPage()
+        displayPageSource()
         animateMenuEntrance()
     }
     
@@ -971,10 +1076,8 @@ class PhotocopierViewController: UIViewController {
         animateLoggedInExit()
         
         displayCancelButton()
+        displayPrintStatus()
         animatePrintingEntrance()
-
-        // Menu
-        // insert functions here that will appear on the printing page
     }
     
     // MARK: - Animation
@@ -1007,6 +1110,7 @@ class PhotocopierViewController: UIViewController {
             for label in self.numberPad {
                 label.alpha = 0
             }
+            self.backspaceButton.alpha = 0
         })
         
         animator.addCompletion { _ in
@@ -1017,6 +1121,7 @@ class PhotocopierViewController: UIViewController {
                 label.removeFromSuperview()
             }
             self.numberPad = []
+            self.backspaceButton.removeFromSuperview()
         }
         
         animator.startAnimation()
@@ -1050,6 +1155,15 @@ class PhotocopierViewController: UIViewController {
             self.twoToTwoImageView.alpha = 0.25
             self.oneToTwoImageView.alpha = 0.25
             self.twoToOneImageView.alpha = 0.25
+            self.seperatorLabel.alpha = 1
+            self.noSrcLabel.alpha = 1
+            self.noSrcBackgroundView.alpha = 1
+            self.sepSrcALabel.alpha = 1
+            self.sepSrcBLabel.alpha = 1
+            self.sepSrcCLabel.alpha = 1
+            self.sepSrcABackgroundView.alpha = 1
+            self.sepSrcBBackgroundView.alpha = 1
+            self.sepSrcCBackgroundView.alpha = 1
         })
         
         animator.startAnimation()
@@ -1093,7 +1207,13 @@ class PhotocopierViewController: UIViewController {
         let animator = UIViewPropertyAnimator(duration: 0.5, curve: .easeIn, animations: {
             self.cancelBackgroundView.alpha = 1
             self.cancelLabel.alpha = 1
+            self.statusLabel.alpha = 1
+            self.progressView.alpha = 1
         })
+        
+        animator.addCompletion { _ in
+            self.updatePrintStatus()
+        }
         
         animator.startAnimation()
     }
@@ -1115,6 +1235,7 @@ class PhotocopierViewController: UIViewController {
     private var borderLine: UIView!
     private var numberPad: [UILabel] = []
     private var numberPadButtons: [UIView] = []
+    private var backspaceButton: UIImageView!
     private var accountLabel: UILabel!
     
     // Header
@@ -1169,6 +1290,11 @@ class PhotocopierViewController: UIViewController {
     // Cancel Button
     private var cancelBackgroundView: RoundShadowView!
     private var cancelLabel: UILabel!
+    private var didCancel: Bool = false
+    
+    // Printing Status
+    private var statusLabel: UILabel!
+    private var progressView: UIProgressView!
     
     // Animation + Interaction
     private var generator = UIImpactFeedbackGenerator(style: .heavy)
